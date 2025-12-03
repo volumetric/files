@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Audio Downloader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input[type="text"]:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 16px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-weight: 500;
+            text-align: center;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .instructions {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .instructions h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .instructions ul {
+            list-style: none;
+        }
+
+        .instructions li {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 YouTube Audio Downloader</h1>
+            <p>Download audio from any YouTube video as MP3</p>
+        </div>
+
+        <div class="form-group">
+            <label for="url">YouTube URL</label>
+            <input 
+                type="text" 
+                id="url" 
+                placeholder="https://www.youtube.com/watch?v=..."
+            >
+        </div>
+
+        <button class="btn" id="downloadBtn">
+            <span id="btnText">⬇️ Download MP3</span>
+        </button>
+
+        <div class="message" id="message"></div>
+
+        <div class="instructions">
+            <h2>How to use:</h2>
+            <ul>
+                <li>1. Copy a YouTube video URL</li>
+                <li>2. Paste it into the input field above</li>
+                <li>3. Click "Download MP3" button</li>
+                <li>4. Wait for the download to complete</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const urlInput = document.getElementById('url');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const btnText = document.getElementById('btnText');
+        const messageDiv = document.getElementById('message');
+
+        function isValidYouTubeUrl(url) {
+            const patterns = [
+                /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/,
+                /^(https?:\/\/)?(www\.)?youtube\.com\/watch\?v=.+$/,
+                /^(https?:\/\/)?(www\.)?youtu\.be\/.+$/
+            ];
+            return patterns.some(pattern => pattern.test(url));
+        }
+
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type} show`;
+        }
+
+        function hideMessage() {
+            messageDiv.className = 'message';
+        }
+
+        async function downloadAudio() {
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                showMessage('Please enter a YouTube URL', 'error');
+                return;
+            }
+
+            if (!isValidYouTubeUrl(url)) {
+                showMessage('Please enter a valid YouTube URL', 'error');
+                return;
+            }
+
+            // Disable input and button
+            urlInput.disabled = true;
+            downloadBtn.disabled = true;
+            btnText.innerHTML = '<span class="spinner"></span> Downloading...';
+            hideMessage();
+
+            try {
+                const response = await fetch('/api/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to download audio');
+                }
+
+                // Get the filename from the response headers
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = 'audio.mp3';
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+                    if (filenameMatch) {
+                        filename = filenameMatch[1];
+                    }
+                }
+
+                // Create a blob from the response
+                const blob = await response.blob();
+                
+                // Create a download link and trigger it
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(downloadUrl);
+                document.body.removeChild(a);
+
+                showMessage('Download complete!', 'success');
+                urlInput.value = '';
+            } catch (err) {
+                showMessage(err.message || 'An error occurred while downloading', 'error');
+            } finally {
+                // Re-enable input and button
+                urlInput.disabled = false;
+                downloadBtn.disabled = false;
+                btnText.textContent = '⬇️ Download MP3';
+            }
+        }
+
+        // Event listeners
+        downloadBtn.addEventListener('click', downloadAudio);
+        
+        urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                downloadAudio();
+            }
+        });
+
+        urlInput.addEventListener('input', () => {
+            hideMessage();
+        });
+    </script>
+</body>
+</html>
